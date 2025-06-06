@@ -1,20 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { ExpenseFiltersComponent } from '@/components/expenses/ExpenseFilters';
 import { ExpenseAnalytics } from '@/components/expenses/ExpenseAnalytics';
 import { EditExpenseDialog } from '@/components/expenses/EditExpenseDialog';
+import { NavigationHeader } from '@/components/navigation/NavigationHeader';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 import { expenseAPI, type Expense, type ExpenseFilters } from '@/lib/api';
 
 export default function Home() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/auth');
+    }
+  }, [isAuthenticated, loading, router]);
 
   const fetchExpenses = async () => {
     setIsLoading(true);
@@ -64,15 +76,17 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          💰 Expense Tracker
-        </h1>
-        <p className="text-gray-600">
-          Track your daily expenses and analyze your spending patterns
-        </p>
-      </div>
+    <ProtectedRoute>
+      <NavigationHeader />
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            📊 Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Track your daily expenses and analyze your spending patterns
+          </p>
+        </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
@@ -119,14 +133,15 @@ export default function Home() {
         <TabsContent value="analytics">
           <ExpenseAnalytics />
         </TabsContent>
-      </Tabs>
+        </Tabs>
 
-      <EditExpenseDialog
-        expense={editingExpense}
-        isOpen={isEditDialogOpen}
-        onClose={handleCloseEditDialog}
-        onSuccess={handleEditSuccess}
-      />
-    </div>
+        <EditExpenseDialog
+          expense={editingExpense}
+          isOpen={isEditDialogOpen}
+          onClose={handleCloseEditDialog}
+          onSuccess={handleEditSuccess}
+        />
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -9,10 +9,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor for logging and auth token
 api.interceptors.request.use(
   (config) => {
     console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
+    
+    // Add auth token if available
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -20,11 +27,21 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling and auth
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    
+    // If unauthorized, clear token and redirect to login
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/auth';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -81,6 +98,37 @@ export interface AnalyticsData {
   }>;
 }
 
+// Authentication interfaces
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  profilePicture?: string;
+  lastLogin?: string;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  data: {
+    token: string;
+    user: User;
+  };
+  message: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+}
+
 export const expenseAPI = {
   // Create expense
   createExpense: async (expense: Omit<Expense, '_id' | 'createdAt' | 'updatedAt'>): Promise<Expense> => {
@@ -127,6 +175,51 @@ export const expenseAPI = {
   getAnalytics: async (): Promise<AnalyticsData> => {
     const response = await api.get('/expenses/analytics');
     return response.data.data;
+  },
+};
+
+// Authentication API
+export const authAPI = {
+  // Register new user
+  register: async (userData: RegisterData): Promise<AuthResponse> => {
+    const response = await api.post('/auth/register', userData);
+    return response.data;
+  },
+
+  // Login user
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    const response = await api.post('/auth/login', credentials);
+    return response.data;
+  },
+
+  // Get current user profile
+  getProfile: async (): Promise<{ success: boolean; data: User }> => {
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  // Update user profile
+  updateProfile: async (userData: Partial<User>): Promise<{ success: boolean; data: User }> => {
+    const response = await api.put('/auth/profile', userData);
+    return response.data;
+  },
+
+  // Change password
+  changePassword: async (oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/auth/change-password', { oldPassword, newPassword });
+    return response.data;
+  },
+
+  // Logout user
+  logout: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  },
+
+  // Refresh token
+  refreshToken: async (): Promise<{ success: boolean; data: { token: string } }> => {
+    const response = await api.post('/auth/refresh');
+    return response.data;
   },
 };
 

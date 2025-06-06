@@ -2,11 +2,11 @@ const Expense = require('../models/Expense');
 const logger = require('../utils/logger');
 
 class ExpenseService {
-  async createExpense(expenseData) {
+  async createExpense(expenseData, userId) {
     try {
-      const expense = new Expense(expenseData);
+      const expense = new Expense({ ...expenseData, user: userId });
       await expense.save();
-      logger.info('Expense created successfully', { expenseId: expense._id });
+      logger.info('Expense created successfully', { expenseId: expense._id, userId });
       return expense;
     } catch (error) {
       logger.error('Error creating expense:', error);
@@ -14,9 +14,9 @@ class ExpenseService {
     }
   }
 
-  async getExpenses(filters = {}, page = 1, limit = 20) {
+  async getExpenses(filters = {}, page = 1, limit = 20, userId) {
     try {
-      const query = this.buildQuery(filters);
+      const query = this.buildQuery({ ...filters, user: userId });
       const skip = (page - 1) * limit;
 
       const [expenses, total] = await Promise.all([
@@ -43,9 +43,9 @@ class ExpenseService {
     }
   }
 
-  async getExpenseById(id) {
+  async getExpenseById(id, userId) {
     try {
-      const expense = await Expense.findById(id);
+      const expense = await Expense.findOne({ _id: id, user: userId });
       if (!expense) {
         throw new Error('Expense not found');
       }
@@ -56,10 +56,10 @@ class ExpenseService {
     }
   }
 
-  async updateExpense(id, updateData) {
+  async updateExpense(id, updateData, userId) {
     try {
-      const expense = await Expense.findByIdAndUpdate(
-        id,
+      const expense = await Expense.findOneAndUpdate(
+        { _id: id, user: userId },
         updateData,
         { new: true, runValidators: true }
       );
@@ -76,9 +76,9 @@ class ExpenseService {
     }
   }
 
-  async deleteExpense(id) {
+  async deleteExpense(id, userId) {
     try {
-      const expense = await Expense.findByIdAndDelete(id);
+      const expense = await Expense.findOneAndDelete({ _id: id, user: userId });
       if (!expense) {
         throw new Error('Expense not found');
       }
@@ -91,9 +91,12 @@ class ExpenseService {
     }
   }
 
-  async getAnalytics() {
+  async getAnalytics(userId) {
     try {
       const analytics = await Expense.aggregate([
+        {
+          $match: { user: userId }
+        },
         {
           $group: {
             _id: {
@@ -132,6 +135,9 @@ class ExpenseService {
       // Get summary statistics
       const summary = await Expense.aggregate([
         {
+          $match: { user: userId }
+        },
+        {
           $group: {
             _id: null,
             totalExpenses: { $sum: '$amount' },
@@ -143,6 +149,9 @@ class ExpenseService {
 
       // Get category breakdown
       const categoryBreakdown = await Expense.aggregate([
+        {
+          $match: { user: userId }
+        },
         {
           $group: {
             _id: '$category',
@@ -168,6 +177,11 @@ class ExpenseService {
 
   buildQuery(filters) {
     const query = {};
+
+    // User filter (always include)
+    if (filters.user) {
+      query.user = filters.user;
+    }
 
     // Date filter
     if (filters.dateFilter) {

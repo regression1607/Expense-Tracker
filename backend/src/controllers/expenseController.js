@@ -13,7 +13,7 @@ class ExpenseController {
         });
       }
 
-      const expense = await expenseService.createExpense(req.body);
+      const expense = await expenseService.createExpense(req.body, req.user._id);
       res.status(201).json({
         success: true,
         data: expense,
@@ -48,7 +48,7 @@ class ExpenseController {
         paymentModes: paymentModes ? (Array.isArray(paymentModes) ? paymentModes : [paymentModes]) : []
       };
 
-      const result = await expenseService.getExpenses(filters, parseInt(page), parseInt(limit));
+      const result = await expenseService.getExpenses(filters, parseInt(page), parseInt(limit), req.user._id);
       
       res.status(200).json({
         success: true,
@@ -62,7 +62,7 @@ class ExpenseController {
 
   async getExpenseById(req, res, next) {
     try {
-      const expense = await expenseService.getExpenseById(req.params.id);
+      const expense = await expenseService.getExpenseById(req.params.id, req.user._id);
       res.status(200).json({
         success: true,
         data: expense
@@ -87,7 +87,7 @@ class ExpenseController {
         });
       }
 
-      const expense = await expenseService.updateExpense(req.params.id, req.body);
+      const expense = await expenseService.updateExpense(req.params.id, req.body, req.user._id);
       res.status(200).json({
         success: true,
         data: expense,
@@ -105,7 +105,7 @@ class ExpenseController {
 
   async deleteExpense(req, res, next) {
     try {
-      await expenseService.deleteExpense(req.params.id);
+      await expenseService.deleteExpense(req.params.id, req.user._id);
       res.status(200).json({
         success: true,
         message: 'Expense deleted successfully'
@@ -122,7 +122,7 @@ class ExpenseController {
 
   async getAnalytics(req, res, next) {
     try {
-      const analytics = await expenseService.getAnalytics();
+      const analytics = await expenseService.getAnalytics(req.user._id);
       res.status(200).json({
         success: true,
         data: analytics

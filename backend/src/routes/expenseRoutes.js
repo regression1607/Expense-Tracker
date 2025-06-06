@@ -1,8 +1,12 @@
 const express = require('express');
 const expenseController = require('../controllers/expenseController');
+const { authenticateToken } = require('../middleware/auth');
 const { validateExpense, validateExpenseFilters } = require('../validators/expenseValidator');
 
 const router = express.Router();
+
+// All expense routes require authentication
+router.use(authenticateToken);
 
 // POST /api/expenses - Create a new expense
 router.post('/', validateExpense, expenseController.createExpense);
