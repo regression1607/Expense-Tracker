@@ -12,9 +12,38 @@ dotenv.config();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://frontend-phi-ashen-23.vercel.app',
+  'https://frontend-kj1k65vz9-regression1607s-projects.vercel.app',
+  'https://expense-tracker-frontend-iota-plum.vercel.app',
+  'https://expense-tracker-frontend-dm7rwwrvt-regression1607s-projects.vercel.app',
+  'https://expense-tracker-frontend-m02sj41v3-regression1607s-projects.vercel.app',
+  'https://expense-tracker-frontend-hys8uehxd-regression1607s-projects.vercel.app',
+  'https://expense-tracker-frontend-regression1607s-projects.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed origins or matches vercel pattern
+    if (allowedOrigins.some(allowed => 
+      allowed === origin || 
+      (origin && origin.endsWith('.vercel.app'))
+    )) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

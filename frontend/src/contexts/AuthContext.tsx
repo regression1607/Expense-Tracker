@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         // Token might be invalid, clear it
+        console.error('Auth initialization error:', error);
         localStorage.removeItem('authToken');
       } finally {
         setLoading(false);

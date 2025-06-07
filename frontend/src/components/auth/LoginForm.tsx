@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { authAPI, type LoginCredentials } from '@/lib/api';
+import { type LoginCredentials } from '@/lib/api';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -39,13 +39,9 @@ export function LoginForm() {
       
       // Redirect to dashboard
       router.push('/');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error);
-      setError(
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        'Login failed. Please try again.'
-      );
+      setError('Failed to login. Please check your credentials and try again.');
     } finally {
       setIsLoading(false);
     }

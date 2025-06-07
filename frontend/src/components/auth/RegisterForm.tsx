@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { authAPI, type RegisterData } from '@/lib/api';
+import { type RegisterData } from '@/lib/api';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),
@@ -44,18 +44,14 @@ export function RegisterForm() {
       setIsLoading(true);
       setError('');
 
-      const { confirmPassword, ...registerData } = data;
+      const { confirmPassword: _, ...registerData } = data;
       await registerUser(registerData);
       
       // Redirect to dashboard
       router.push('/');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Registration error:', error);
-      setError(
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        'Registration failed. Please try again.'
-      );
+      setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

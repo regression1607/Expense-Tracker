@@ -9,27 +9,39 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
     
-    // Start server
-    app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
+    // For Vercel, we don't need to start the server explicitly
+    if (process.env.NODE_ENV !== 'production') {
+      app.listen(PORT, () => {
+        logger.info(`Server running on port ${PORT}`);
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+      });
+    }
   } catch (error) {
     logger.error('Failed to start server:', error);
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   }
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection:', err);
-  process.exit(1);
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception:', err);
-  process.exit(1);
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
+// Initialize the server
 startServer();
+
+// Export the app for Vercel
+module.exports = app;
